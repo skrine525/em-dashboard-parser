@@ -9,24 +9,29 @@
 - MySQL: установленный и настроенный сервер MySQL
 
 ## Установка
-
-1. Клонируйте этот репозиторий на вашем компьютере:
+1. Установите браузер Chrome:
+    ```bash
+    wget -nc https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb 
+    sudo apt update
+    sudo apt install -f ./google-chrome-stable_current_amd64.deb 
+    ```
+2. Клонируйте этот репозиторий на вашем компьютере:
 
    ```bash
    git clone https://github.com/skrine525/em-dashboard-parser
    ```
    
-2. Перейдите в папку проекта:
+3. Перейдите в папку проекта:
     ```bash
     cd dashboard-parser
     ```
     
-3. Установите необходимые зависимости, предпочтительно в виртуальной среде:
+4. Установите необходимые зависимости, предпочтительно в виртуальной среде:
     ```bash
     pip3 install -r requirements.txt
     ```
 
-4. Переименуйте файл **_config**.json в **config.json** и настройте его:
+5. Переименуйте файл **_config**.json в **config.json** и настройте его:
     ```json
     {
         "FILES_DIR": "Путь к папке с файлами для парсинга",
@@ -37,7 +42,7 @@
     }
     ```
 
-5. Выполните создание схемы БД:
+6. Выполните создание схемы БД:
     ```bash
     python3.8 initdb.py
     ```

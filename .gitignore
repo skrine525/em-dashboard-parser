@@ -4,3 +4,4 @@
 /geckodriver.log
 /parser.log
 /files
+__pycache__/
