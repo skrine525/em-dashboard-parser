@@ -9,26 +9,54 @@ from parserlib.paths import VOSTOCHNY_DIR, ICI3_DIR
 
 # Парсит индексы FOB Vostochny и заносит в БД
 def write_vostochny_indicies(excel_file: pd.ExcelFile):
-    dataframe = excel_file.parse(excel_file.sheet_names[0])[3:]     # Получаем dataframe листа
-    values = dataframe.values                                       # Получаем массив строк
+    sheet_name = excel_file.sheet_names[0]                              # Получаем название листа
     
-    session = Session()                                             # Открываем сессию БД
-    for row in values:                                              # Итерируем строки листа
-        date = row[0].strftime("%Y-%m-%d")                          # Форматируем дату для БД
-        index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+    if sheet_name == "Price history":
+        # Если открыт файл с историческими данными
         
-        # Если запись не существует - создаем ее и добавляем в БД
-        if not index:
-            index = Index(date)
-            session.add(index)
+        dataframe = excel_file.parse(excel_file.sheet_names[0])[3:]     # Получаем dataframe листа
+        values = dataframe.values                                       # Получаем массив строк
         
-        # Заносим данные в сущность
-        index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        index.vostochny_5500 = row[1]
-        index.vostochny_4600 = round(row[1] / 5500 * 4600, 2)
+        session = Session()                                             # Открываем сессию БД
+        for row in values:                                              # Итерируем строки листа
+            date = row[0].strftime("%Y-%m-%d")                          # Форматируем дату для БД
+            index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+            
+            # Если запись не существует - создаем ее и добавляем в БД
+            if not index:
+                index = Index(date)
+                session.add(index)
+            
+            # Заносим данные в сущность
+            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            index.vostochny_5500 = row[1]
+            index.vostochny_4600 = round(row[1] / 5500 * 4600, 2)
+            
+            session.commit()                                            # Записываем данные в БД
+        session.close()                                                 # Закрываем сессию БД
+    elif sheet_name == "Цены":
+        # Если открыт файл с текущими ценами
         
-        session.commit()                                            # Записываем данные в БД
-    session.close()                                                 # Закрываем сессию БД
+        dataframe = excel_file.parse(excel_file.sheet_names[0])         # Получаем dataframe листа
+        values = dataframe.values                                       # Получаем массив строк
+        
+        session = Session()                                             # Открываем сессию БД
+        for row in values:                                              # Итерируем строки листа
+            date = row[8].strftime("%Y-%m-%d")                          # Форматируем дату для БД
+            index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+            
+            # Если запись не существует - создаем ее и добавляем в БД
+            if not index:
+                index = Index(date)
+                session.add(index)
+            
+            # Заносим данные в сущность
+            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            index.vostochny_5500 = row[6]
+            index.vostochny_4600 = round(row[6] / 5500 * 4600, 2)
+            
+            session.commit()                                            # Записываем данные в БД
+        session.close()                                                 # Закрываем сессию БД
     
 # Парсит индексы ICI3 и заносит в БД
 def write_ici3_indicies(excel_file: pd.ExcelFile):
