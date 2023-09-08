@@ -3,5 +3,10 @@
     "SQL_HOST": "",
     "SQL_USERNAME": "",
     "SQL_PASSWORD": "",
-    "SQL_DATABASE": ""
+    "SQL_DATABASE": "",
+    "ARGUS_USERNAME": "",
+    "ARGUS_PASSWORD": "",
+    "EMAIL_SERVER": "",
+    "EMAIL_ADDRESS": "",
+    "EMAIL_PASSWORD": ""
 }

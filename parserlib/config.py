@@ -19,8 +19,11 @@ SQL_HOST = config_data['SQL_HOST']
 SQL_USERNAME = config_data['SQL_USERNAME']
 SQL_PASSWORD = config_data['SQL_PASSWORD']
 SQL_DATABASE = config_data['SQL_DATABASE']
-# ARGUS_USERNAME = config_data['ARGUS_USERNAME']
-# ARGUS_PASSWORD = config_data['ARGUS_PASSWORD']
+ARGUS_USERNAME = config_data['ARGUS_USERNAME']
+ARGUS_PASSWORD = config_data['ARGUS_PASSWORD']
+EMAIL_SERVER =  config_data['EMAIL_SERVER']
+EMAIL_ADDRESS = config_data['EMAIL_ADDRESS']
+EMAIL_PASSWORD = config_data['EMAIL_PASSWORD']
 
 # Очищаем ненужные переменные
 del config_file

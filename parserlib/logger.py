@@ -11,4 +11,4 @@ logging.basicConfig(
 )
 
 # Объект логера
-logger = logging.getLogger("Parser")
+logger = logging.getLogger("Dashboard Parser")

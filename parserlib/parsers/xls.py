@@ -32,25 +32,52 @@ def write_vostochny_indicies(excel_file: pd.ExcelFile):
     
 # Парсит индексы ICI3 и заносит в БД
 def write_ici3_indicies(excel_file: pd.ExcelFile):
-    dataframe = excel_file.parse(excel_file.sheet_names[0])[3:]     # Получаем dataframe листа
-    values = dataframe.values                                       # Получаем массив строк
+    sheet_name = excel_file.sheet_names[0]                              # Получаем название листа
     
-    session = Session()                                             # Открываем сессию БД
-    for row in values:                                              # Итерируем строки листа
-        date = row[0].strftime("%Y-%m-%d")                          # Форматируем дату для БД
-        index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+    if sheet_name == "Price history":
+        # Если открыт файл с историческими данными
         
-        # Если запись не существует - создаем ее и добавляем в БД
-        if not index:
-            index = Index(date)
-            session.add(index)
+        dataframe = excel_file.parse(sheet_name)[3:]                    # Получаем dataframe листа
+        values = dataframe.values                                       # Получаем массив строк
         
-        # Заносим данные в сущность
-        index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        index.ici3 = row[2]
+        session = Session()                                             # Открываем сессию БД
+        for row in values:                                              # Итерируем строки листа
+            date = row[0].strftime("%Y-%m-%d")                          # Форматируем дату для БД
+            index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+            
+            # Если запись не существует - создаем ее и добавляем в БД
+            if not index:
+                index = Index(date)
+                session.add(index)
+            
+            # Заносим данные в сущность
+            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            index.ici3 = row[2]
+            
+            session.commit()                                            # Записываем данные в БД
+        session.close()                                                 # Закрываем сессию БД
+    elif sheet_name == "Цены":
+        # Если открыт файл с текущими ценами
         
-        session.commit()                                            # Записываем данные в БД
-    session.close()                                                 # Закрываем сессию БД
+        dataframe = excel_file.parse(sheet_name)                        # Получаем dataframe листа
+        values = dataframe.values                                       # Получаем массив строк
+        
+        session = Session()                                             # Открываем сессию БД
+        for row in values:                                              # Итерируем строки листа
+            date = row[8].strftime("%Y-%m-%d")                          # Форматируем дату для БД
+            index = session.query(Index).filter_by(date=date).first()   # Ищем запись в БД по дате
+            
+            # Если запись не существует - создаем ее и добавляем в БД
+            if not index:
+                index = Index(date)
+                session.add(index)
+            
+            # Заносим данные в сущность
+            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            index.ici3 = row[6]
+            
+            session.commit()                                            # Записываем данные в БД
+        session.close()                                                 # Закрываем сессию БД
 
 # Точка входа
 def main():
