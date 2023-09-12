@@ -1,10 +1,10 @@
 import os, datetime
 import pandas as pd
+from parserlib import utils
 from parserlib.db.engine import Session
 from parserlib.db.model import Index
 from parserlib.logger import logger
 from parserlib.paths import VOSTOCHNY_DIR, ICI3_DIR
-
 
 
 # Парсит индексы FOB Vostochny и заносит в БД
@@ -114,18 +114,27 @@ def main():
     # Парсинг файлов FOV Vostochny
     vostochny_files = os.listdir(VOSTOCHNY_DIR)
     for filename in vostochny_files:
-        logger.info(f"Parsing '{filename}' file...")
+        logger.info(f"Parsing '{filename}' file")
         xls_path = os.path.join(VOSTOCHNY_DIR, filename)
         excel_file = pd.ExcelFile(xls_path)
-        write_vostochny_indicies(excel_file)
+        
+        try:
+            write_vostochny_indicies(excel_file)
+            utils.archive_file(xls_path)
+        except:
+            logger.exception(f"File '{filename}' parsing exception")
     
     # Парсинг файлов ICI3
     ici3_files = os.listdir(ICI3_DIR)
     for filename in ici3_files:
-        logger.info(f"Parsing '{filename}' file...")
+        logger.info(f"Parsing '{filename}' file")
         xls_path = os.path.join(ICI3_DIR, filename)
         excel_file = pd.ExcelFile(xls_path)
-        write_ici3_indicies(excel_file)
+        try:
+            write_ici3_indicies(excel_file)
+            utils.archive_file(xls_path)
+        except:
+            logger.exception(f"File '{filename}' parsing exception")
         
     logger.info("Done!")
 

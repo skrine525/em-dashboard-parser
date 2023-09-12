@@ -1,8 +1,17 @@
+# VS Code
 /.vscode
+
+# Python
 /env
+__pycache__/
+
+# Dashboard Parser
 /config.json
-/geckodriver.log
 /parser.log
 /files
 /downloads
-__pycache__/
+
+# Selenium
+/geckodriver.log
+/chromedriver
+/chromedriver.exe

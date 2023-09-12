@@ -1,5 +1,8 @@
-import os, datetime
+import os, datetime, fitz, pytesseract
+from PIL import Image
+from io import BytesIO
 from PyPDF2 import PdfReader
+from parserlib import utils
 from parserlib.db.model import CPRStockpile, Index, Freight
 from parserlib.db.engine import Session
 from parserlib.logger import logger
@@ -8,6 +11,8 @@ from parserlib.paths import CCI_DIR, FREIGHT_DIR
 
 # Константы
 CCI_STRING = "CCI 4700 Import^"
+CCI_STRING_V2 = "cci 4700 import"
+CCI_CHINA_STRING = 'china'
 STOCKPILE_STRING = "Stockpile"
 FREIGHT_STRING_1 = "Indonesia-S Korea"
 FREIGHT_STRING_2 = "Indonesia-EC India"
@@ -56,8 +61,33 @@ def get_date_by_freight_filename(filename: str) -> str:
 
     return f"{year}-{month}-{day}"
 
+# Извлекает текст из всех картинок PDF файла
+def extract_text_from_images_in_pdf(pdf_path) -> str:
+    pdf_document = fitz.open(pdf_path)
+    
+    text = ''
+    for page_number in range(pdf_document.page_count):
+        page = pdf_document.load_page(page_number)
+        image_list = page.get_images(full=True)
+        
+        for img_index, img in enumerate(image_list):
+            xref = img[0]
+            base_image = pdf_document.extract_image(xref)
+            image_data = base_image["image"]
+            
+            # Создаем объект BytesIO для чтения данных изображения
+            image_stream = BytesIO(image_data)
 
-# Парсит данные о запасах CPR и записывает в базу данных
+            # Открываем изображение с помощью Pillow
+            image = Image.open(image_stream)
+            
+            custom_config = r'--oem 3 --psm 6'  # Опции для распознавания (с права налево, сверху вниз)
+            text += pytesseract.image_to_string(image, config=custom_config, lang='eng')
+    
+    pdf_document.close()
+    return text
+
+# Парсит данные о запасах CPR и записывает в базу данных ПЕРВЫМ способом
 def write_stockpiles(reader: PdfReader, date: str):
     session = Session()                                                         # Открываем сессию БД
     cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
@@ -71,11 +101,59 @@ def write_stockpiles(reader: PdfReader, date: str):
             stockpiles = []
             i = 0
             while len(stockpiles) < 9:
-                i = text.find(STOCKPILE_STRING, i+1)                # Получаем индекс первого символа Stockpile
+                i = text.find(STOCKPILE_STRING, i + 1)              # Получаем индекс первого символа Stockpile
                 j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
                 k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
                 stockpile_str = text[j:k]                           # Извлекаем число в виде строки
-                stockpile = int(stockpile_str.replace(',', ''))     # Получаем числовую переменную из строки
+                stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
+                stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
+                stockpiles.append(stockpile)                        # Заносим число в список
+        except ValueError:
+            session.close()                                         # Закрываем сессию БД
+            return "Error"
+        
+        # Создаем и добавляем запись в БД
+        cpr_stockpile = CPRStockpile(date)
+        session.add(cpr_stockpile)
+        
+        # Записываем данные в сущность
+        cpr_stockpile.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+        cpr_stockpile.qinhuangdao_stockpile = stockpiles[0]
+        cpr_stockpile.sdic_jingtang_stockpile = stockpiles[1]
+        cpr_stockpile.jingtang_terminal_stockpile = stockpiles[2]
+        cpr_stockpile.old_jingtang_stockpile = stockpiles[3]
+        cpr_stockpile.sdic_caofeidian_stockpile = stockpiles[4]
+        cpr_stockpile.caofeidian_phase2_stockpile = stockpiles[5]
+        cpr_stockpile.huaneng_caofeidian_stockpile = stockpiles[6]
+        cpr_stockpile.huanghua_stockpile = stockpiles[7]
+        cpr_stockpile.guangzhou_stockpile = stockpiles[8]
+        cpr_stockpile.calculate_general_stockpile()
+
+        session.commit()                                            # Записываем данные в БД
+        session.close()                                             # Закрываем сессию БД
+
+        return "Added"
+    else:                                                           # Если запись существует, пропускаем парсинг
+        session.close()                                             # Закрываем сессию БД
+        return "Skipped"
+    
+# Парсит данные о запасах CPR и записывает в базу данных ВТОРЫМ способом
+def write_stockpiles_v2(text: str, date: str):
+    session = Session()                                                         # Открываем сессию БД
+    cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
+
+    if not cpr_stockpile:                                           # Если запись не существует, начинаем парсинг
+        # Парсим запасы
+        try:
+            stockpiles = []
+            i = 0
+            while len(stockpiles) < 9:
+                i = text.find(STOCKPILE_STRING.lower(), i + 1)      # Получаем индекс первого символа Stockpile
+                j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
+                k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
+                stockpile_str = text[j:k]                           # Извлекаем число в виде строки
+                stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
+                stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
                 stockpiles.append(stockpile)                        # Заносим число в список
         except ValueError:
             session.close()                                         # Закрываем сессию БД
@@ -106,7 +184,7 @@ def write_stockpiles(reader: PdfReader, date: str):
         session.close()                                             # Закрываем сессию БД
         return "Skipped"
 
-# Парсит и записывает CCI индексы в базу данных
+# Парсит и записывает CCI индексы в базу данных ПЕРВЫМ способом
 def write_cci_indicies(reader: PdfReader, date: str):
     session = Session()                                             # Открываем сессию БД
     index = session.query(Index).filter_by(date=date).first()       # Ищем запись в БД по дате
@@ -122,6 +200,42 @@ def write_cci_indicies(reader: PdfReader, date: str):
         # Парсим индекс
         i = text.find(CCI_STRING, 0)
         j = i + len(CCI_STRING) + 1
+        k = text.find(' ', j)
+        cci_4700_str = text[j:k]
+
+        try:
+            # Заносим данные в сущность
+            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            index.cci_4700 = float(cci_4700_str)
+            index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
+            
+            session.commit()            # Записываем данные в БД
+            session.close()             # Закрываем сессию БД
+
+            return "Added"
+        except ValueError:
+            session.close()             # Закрываем сессию БД
+            return "Error"
+    else:                                                           # Если все индексы заполнены - пропускаем парсинг
+        session.close()             # Закрываем сессию БД
+        return "Skipped"
+    
+# Парсит и записывает CCI индексы в базу данных ВТОРЫМ способом
+def write_cci_indicies_v2(text: str, date: str):
+    session = Session()                                             # Открываем сессию БД
+    index = session.query(Index).filter_by(date=date).first()       # Ищем запись в БД по дате
+
+    if not index:                                                   # Если запись не сущесвует - создаем и добавляем в БД
+        index = Index(date)
+        session.add(index)
+
+    if not index.cci_4600 or not index.cci_4700:                    # Если один из индексов не заполнен, то начинаем парсинг
+        text = text.replace("\n", " ")                              # Заменяем символ перехода строки на пробел
+        
+        # Парсим индекс
+        i = text.find(CCI_STRING_V2, 0)
+        i = text.find(CCI_CHINA_STRING, i + 1)
+        j = i + len(CCI_CHINA_STRING) + 1
         k = text.find(' ', j)
         cci_4700_str = text[j:k]
 
@@ -207,12 +321,36 @@ def main():
                 
     # Итерируем файлы и парсим 
     for file_data in sorted_pdf_files:
-        pdf_path = os.path.join(CCI_DIR, file_data[0])                                      # Формируем путь к файлу
-        reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
-        result_stockpiles = write_stockpiles(reader, file_data[1])                          # Парсим запасы
-        result_cci = write_cci_indicies(reader, file_data[1])                               # Парсим индексы
-        logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
-        logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
+        pdf_path = os.path.join(CCI_DIR, file_data[0])                                          # Формируем путь к файлу
+        reader = PdfReader(pdf_path)                                                            # Создаем "читателя" файла
+        page1_text = reader.pages[0].extract_text()                                             # Достаем текст из первой страницы страницы
+        i = page1_text.find(' ')
+        first_word = page1_text[:i].lower()
+        if first_word == 'cci':
+            try:
+                text = extract_text_from_images_in_pdf(pdf_path).lower()                            # Извлекаем текст из картинок в PDF файле
+                result_stockpiles = write_stockpiles_v2(text, file_data[1])                         # Парсим запасы
+                result_cci = write_cci_indicies_v2(text, file_data[1])                              # Парсим индексы
+                
+                logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
+                logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
+                
+                if result_stockpiles != "Error" and result_cci != 'Error':
+                    utils.archive_file(pdf_path)
+            except:
+                logger.exception(f"File '{file_data[0]}' parsing exception")
+        else:
+            try:
+                result_stockpiles = write_stockpiles(reader, file_data[1])                          # Парсим запасы
+                result_cci = write_cci_indicies(reader, file_data[1])                               # Парсим индексы
+                
+                logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
+                logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
+                
+                if result_stockpiles != "Error" and result_cci != 'Error':
+                    utils.archive_file(pdf_path)
+            except:
+                logger.exception(f"File '{file_data[0]}' parsing exception")
 
     # Получаем список файлов Freight
     pdf_files = os.listdir(FREIGHT_DIR)
@@ -233,8 +371,15 @@ def main():
     for file_data in sorted_pdf_files:
         pdf_path = os.path.join(FREIGHT_DIR, file_data[0])                                  # Формируем путь к файлу
         reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
-        result = write_freight(reader, file_data[1])                                        # Парсим запасы
-        logger.info(f"Parsing '{file_data[0]}' file: [Freight {result}]")
+        
+        try:
+            result = write_freight(reader, file_data[1])                                        # Парсим запасы
+            logger.info(f"Parsing '{file_data[0]}' file: [Freight {result}]")
+            
+            if result != "Error":
+                utils.archive_file(pdf_path)
+        except:
+            logger.exception(f"File '{file_data[0]}' parsing exception")
         
     logger.info("Done!")
         

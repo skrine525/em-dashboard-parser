@@ -26,11 +26,6 @@ def main():
     
     # Итерируем письма
     for email in sorted_emails:
-        print(f"Subject: {email.subject}")
-        print(f"From: {email.sender.email_address}")
-        print(f"Received: {email.datetime_received}")
-        print("\n")
-        
         # Если есть вложения, начинаем итерацию вложений
         if email.attachments:
             for attachment in email.attachments:
