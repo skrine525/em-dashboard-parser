@@ -1,4 +1,5 @@
 import os, datetime, fitz, pytesseract
+from sqlalchemy import orm
 from PIL import Image
 from io import BytesIO
 from PyPDF2 import PdfReader
@@ -88,8 +89,7 @@ def extract_text_from_images_in_pdf(pdf_path) -> str:
     return text
 
 # Парсит данные о запасах CPR и записывает в базу данных ПЕРВЫМ способом
-def write_stockpiles(reader: PdfReader, date: str):
-    session = Session()                                                         # Открываем сессию БД
+def write_stockpiles(reader: PdfReader, session: orm.Session, date: str):
     cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
 
     if not cpr_stockpile:                                           # Если запись не существует, начинаем парсинг
@@ -109,7 +109,6 @@ def write_stockpiles(reader: PdfReader, date: str):
                 stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
                 stockpiles.append(stockpile)                        # Заносим число в список
         except ValueError:
-            session.close()                                         # Закрываем сессию БД
             return "Error"
         
         # Создаем и добавляем запись в БД
@@ -130,16 +129,13 @@ def write_stockpiles(reader: PdfReader, date: str):
         cpr_stockpile.calculate_general_stockpile()
 
         session.commit()                                            # Записываем данные в БД
-        session.close()                                             # Закрываем сессию БД
 
         return "Added"
     else:                                                           # Если запись существует, пропускаем парсинг
-        session.close()                                             # Закрываем сессию БД
         return "Skipped"
     
 # Парсит данные о запасах CPR и записывает в базу данных ВТОРЫМ способом
-def write_stockpiles_v2(text: str, date: str):
-    session = Session()                                                         # Открываем сессию БД
+def write_stockpiles_v2(text: str, session: orm.Session, date: str):
     cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
 
     if not cpr_stockpile:                                           # Если запись не существует, начинаем парсинг
@@ -156,7 +152,6 @@ def write_stockpiles_v2(text: str, date: str):
                 stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
                 stockpiles.append(stockpile)                        # Заносим число в список
         except ValueError:
-            session.close()                                         # Закрываем сессию БД
             return "Error"
         
         # Создаем и добавляем запись в БД
@@ -177,16 +172,13 @@ def write_stockpiles_v2(text: str, date: str):
         cpr_stockpile.calculate_general_stockpile()
 
         session.commit()                                            # Записываем данные в БД
-        session.close()                                             # Закрываем сессию БД
 
         return "Added"
     else:                                                           # Если запись существует, пропускаем парсинг
-        session.close()                                             # Закрываем сессию БД
         return "Skipped"
 
 # Парсит и записывает CCI индексы в базу данных ПЕРВЫМ способом
-def write_cci_indicies(reader: PdfReader, date: str):
-    session = Session()                                             # Открываем сессию БД
+def write_cci_indicies(reader: PdfReader, session: orm.Session, date: str):
     index = session.query(Index).filter_by(date=date).first()       # Ищем запись в БД по дате
 
     if not index:                                                   # Если запись не сущесвует - создаем и добавляем в БД
@@ -210,19 +202,16 @@ def write_cci_indicies(reader: PdfReader, date: str):
             index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
             
             session.commit()            # Записываем данные в БД
-            session.close()             # Закрываем сессию БД
 
             return "Added"
         except ValueError:
-            session.close()             # Закрываем сессию БД
+            session.rollback()
             return "Error"
     else:                                                           # Если все индексы заполнены - пропускаем парсинг
-        session.close()             # Закрываем сессию БД
         return "Skipped"
     
 # Парсит и записывает CCI индексы в базу данных ВТОРЫМ способом
-def write_cci_indicies_v2(text: str, date: str):
-    session = Session()                                             # Открываем сессию БД
+def write_cci_indicies_v2(text: str, session: orm.Session, date: str):
     index = session.query(Index).filter_by(date=date).first()       # Ищем запись в БД по дате
 
     if not index:                                                   # Если запись не сущесвует - создаем и добавляем в БД
@@ -246,19 +235,16 @@ def write_cci_indicies_v2(text: str, date: str):
             index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
             
             session.commit()            # Записываем данные в БД
-            session.close()             # Закрываем сессию БД
 
             return "Added"
         except ValueError:
-            session.close()             # Закрываем сессию БД
+            session.rollback()
             return "Error"
     else:                                                           # Если все индексы заполнены - пропускаем парсинг
-        session.close()             # Закрываем сессию БД
         return "Skipped"
 
 # Парсит данные о фрахтах и записывает в базу данных
-def write_freight(reader: PdfReader, date: str = None):
-    session = Session()                                             # Открываем сессию БД
+def write_freight(reader: PdfReader, session: orm.Session, date: str = None):
     freight = session.query(Freight).filter_by(date=date).first()   # Ищем запись в БД по дате
 
     if not freight:                                                 # Если запись не существует - начинаем парсинг
@@ -290,101 +276,104 @@ def write_freight(reader: PdfReader, date: str = None):
             freight.indonesia_to_china_rate = float(text[j:k])      # Получаем число
 
             session.commit()                                        # Записываем данные в БД
-            session.close()                                         # Закрываем сессию БД
 
             return 'Added'
         except ValueError:
-            session.close()                                         # Закрываем сессию БД
+            session.rollback()
             return "Error"
     else:
-        session.close()                                             # Закрываем сессию БД
         return "Skipped"
 
 # Точка входа
 def main():
-    logger.info("Parsing: PDF files")
+    session = Session()
     
-    # Получаем список файлов CCI
-    pdf_files = os.listdir(CCI_DIR)
-    sorted_pdf_files = []
-    for filename in pdf_files:
-        # Просчитываем дату из названия файла
-        date = get_date_by_cci_filename(filename)
-        sorted_pdf_files.append([filename, date])
-
-    # Выполняем сортировку файлов по дате
-    n = len(sorted_pdf_files)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if sorted_pdf_files[j][1] > sorted_pdf_files[j + 1][1]:
-                sorted_pdf_files[j], sorted_pdf_files[j + 1] = sorted_pdf_files[j + 1], sorted_pdf_files[j]
-                
-    # Итерируем файлы и парсим 
-    for file_data in sorted_pdf_files:
-        pdf_path = os.path.join(CCI_DIR, file_data[0])                                          # Формируем путь к файлу
-        reader = PdfReader(pdf_path)                                                            # Создаем "читателя" файла
-        page1_text = reader.pages[0].extract_text()                                             # Достаем текст из первой страницы страницы
-        i = page1_text.find(' ')
-        first_word = page1_text[:i].lower()
-        if first_word == 'cci':
-            try:
-                text = extract_text_from_images_in_pdf(pdf_path).lower()                            # Извлекаем текст из картинок в PDF файле
-                result_stockpiles = write_stockpiles_v2(text, file_data[1])                         # Парсим запасы
-                result_cci = write_cci_indicies_v2(text, file_data[1])                              # Парсим индексы
-                
-                logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
-                logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
-                
-                if result_stockpiles != "Error" and result_cci != 'Error':
-                    utils.archive_file(pdf_path)
-            except:
-                logger.exception(f"File '{file_data[0]}' parsing exception")
-        else:
-            try:
-                result_stockpiles = write_stockpiles(reader, file_data[1])                          # Парсим запасы
-                result_cci = write_cci_indicies(reader, file_data[1])                               # Парсим индексы
-                
-                logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
-                logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
-                
-                if result_stockpiles != "Error" and result_cci != 'Error':
-                    utils.archive_file(pdf_path)
-            except:
-                logger.exception(f"File '{file_data[0]}' parsing exception")
-
-    # Получаем список файлов Freight
-    pdf_files = os.listdir(FREIGHT_DIR)
-    sorted_pdf_files = []
-    for filename in pdf_files:
-        # Просчитываем дату из названия файла
-        date = get_date_by_freight_filename(filename)
-        sorted_pdf_files.append([filename, date])
-
-    # Выполняем сортировку файлов по дате
-    n = len(sorted_pdf_files)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if sorted_pdf_files[j][1] > sorted_pdf_files[j + 1][1]:
-                sorted_pdf_files[j], sorted_pdf_files[j + 1] = sorted_pdf_files[j + 1], sorted_pdf_files[j]
-    
-    # Итерируем файлы и парсим 
-    for file_data in sorted_pdf_files:
-        pdf_path = os.path.join(FREIGHT_DIR, file_data[0])                                  # Формируем путь к файлу
-        reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
+    try:
+        logger.info("Parsing: PDF files")
         
-        try:
-            result = write_freight(reader, file_data[1])                                        # Парсим запасы
-            logger.info(f"Parsing '{file_data[0]}' file: [Freight {result}]")
+        # Получаем список файлов CCI
+        pdf_files = os.listdir(CCI_DIR)
+        sorted_pdf_files = []
+        for filename in pdf_files:
+            # Просчитываем дату из названия файла
+            date = get_date_by_cci_filename(filename)
+            sorted_pdf_files.append([filename, date])
+
+        # Выполняем сортировку файлов по дате
+        n = len(sorted_pdf_files)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if sorted_pdf_files[j][1] > sorted_pdf_files[j + 1][1]:
+                    sorted_pdf_files[j], sorted_pdf_files[j + 1] = sorted_pdf_files[j + 1], sorted_pdf_files[j]
+                    
+        # Итерируем файлы и парсим 
+        for file_data in sorted_pdf_files:
+            try:
+                pdf_path = os.path.join(CCI_DIR, file_data[0])                                          # Формируем путь к файлу
+                reader = PdfReader(pdf_path)                                                            # Создаем "читателя" файла
+                page1_text = reader.pages[0].extract_text()                                             # Достаем текст из первой страницы страницы
+                i = page1_text.find(' ')
+                first_word = page1_text[:i].lower()
+                
+                # Определяем тип файла: новый или старый
+                if first_word == 'cci':
+                    # Новый файл, используем второй вариант парсинга
+                    
+                    text = extract_text_from_images_in_pdf(pdf_path).lower()                            # Извлекаем текст из картинок в PDF файле
+                    result_stockpiles = write_stockpiles_v2(text, session, file_data[1])                # Парсим запасы
+                    result_cci = write_cci_indicies_v2(text, session, file_data[1])                     # Парсим индексы
+                    
+                    logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
+                    logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
+                    
+                    if result_stockpiles != "Error" and result_cci != 'Error':
+                        utils.archive_file(pdf_path)
+                else:
+                    # Старый файл, используем первый вариант парсинга
+                    
+                    result_stockpiles = write_stockpiles(reader, session, file_data[1])                 # Парсим запасы
+                    result_cci = write_cci_indicies(reader, session, file_data[1])                      # Парсим индексы
+                    
+                    logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
+                    logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
+                    
+                    if result_stockpiles != "Error" and result_cci != 'Error':
+                        utils.archive_file(pdf_path)
+            except:
+                logger.exception(f"File '{file_data[0]}' parsing exception")
+
+        # Получаем список файлов Freight
+        pdf_files = os.listdir(FREIGHT_DIR)
+        sorted_pdf_files = []
+        for filename in pdf_files:
+            # Просчитываем дату из названия файла
+            date = get_date_by_freight_filename(filename)
+            sorted_pdf_files.append([filename, date])
+
+        # Выполняем сортировку файлов по дате
+        n = len(sorted_pdf_files)
+        for i in range(n):
+            for j in range(0, n - i - 1):
+                if sorted_pdf_files[j][1] > sorted_pdf_files[j + 1][1]:
+                    sorted_pdf_files[j], sorted_pdf_files[j + 1] = sorted_pdf_files[j + 1], sorted_pdf_files[j]
+        
+        # Итерируем файлы и парсим 
+        for file_data in sorted_pdf_files:
+            try:
+                pdf_path = os.path.join(FREIGHT_DIR, file_data[0])                                  # Формируем путь к файлу
+                reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
+                
+                result = write_freight(reader, session, file_data[1])                               # Парсим запасы
+                logger.info(f"Parsing '{file_data[0]}' file: [Freight {result}]")
+                
+                if result != "Error":
+                    utils.archive_file(pdf_path)
+            except:
+                logger.exception(f"File '{file_data[0]}' parsing exception")
             
-            if result != "Error":
-                utils.archive_file(pdf_path)
-        except:
-            logger.exception(f"File '{file_data[0]}' parsing exception")
-        
-    logger.info("Done!")
-        
-    
-
+        logger.info("Done!")
+    finally:
+        session.close()
 
 # Если файл был запущен, а не импортирован
 if __name__ == "__main__":

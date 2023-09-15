@@ -29,6 +29,8 @@ def archive_file(src: str):
         dst = paths.ARCHIVE_ICI3_DIR
     elif directory == os.path.basename(paths.VOSTOCHNY_DIR):
         dst = paths.ARCHIVE_VOSTOCHNY_DIR
+    elif directory == os.path.basename(paths.MANUAL_DIR):
+        dst = paths.ARCHIVE_MANUAL_DIR
     else:
         raise UnknownDirectoryError(directory)
     
