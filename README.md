@@ -16,7 +16,7 @@
     sudo apt install -f ./google-chrome-stable_current_amd64.deb 
     ```
 
-2. Установите Tesseract OCR
+2. Установите Tesseract OCR:
     ```bash
     sudo apt install tesseract-ocr
     sudo apt install libtesseract-dev
@@ -91,7 +91,7 @@
     ```bash
     python3.8 parse.py xls
     ```
-- Парсинг **"ручного" XLSX файла**
+- Парсинг **"ручных" XLSX файлов** из **%FILES_DIR%/xlsx_manual**:
     ```bash
     python3.8 parse.py manual-xlsx
     ```
