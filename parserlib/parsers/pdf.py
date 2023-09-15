@@ -15,9 +15,17 @@ CCI_STRING = "CCI 4700 Import^"
 CCI_STRING_V2 = "cci 4700 import"
 CCI_CHINA_STRING = 'china'
 STOCKPILE_STRING = "Stockpile"
+CHINESE_COAL_PORTS_ROUNDUP_STRING = "chinese coal ports roundup"
 FREIGHT_STRING_1 = "Indonesia-S Korea"
 FREIGHT_STRING_2 = "Indonesia-EC India"
 FREIGHT_STRING_3 = "Indonesia-S China"
+CHINESE_COAL_PORTS = [
+    ['qinhuangdao', 'qinhuangdao'], ['sdic jingtang', 'sdic_jingtang'],
+    ['jingtang terminal', 'jingtang_terminal'], ['old jingtang', 'old_jingtang'],
+    ['sdic caofeidian', 'sdic_caofeidian'], ['caofeidian phase', 'caofeidian_phase'],
+    ['huaneng caofeidian', 'huaneng_caofeidian'],  ['huadian caofeidian', 'huadian_caofeidian'],
+    ['huanghua', 'huanghua'], ['guangzhou', 'guangzhou']
+]
 MONTHS = [
     ['Jan', 1, '01'],
     ['Feb', 2, '02'],
@@ -97,19 +105,16 @@ def write_stockpiles(reader: PdfReader, session: orm.Session, date: str):
         text = page.extract_text().replace("\n", " ")               # Достаем текст из страницы
         
         # Парсим запасы
-        try:
-            stockpiles = []
-            i = 0
-            while len(stockpiles) < 9:
-                i = text.find(STOCKPILE_STRING, i + 1)              # Получаем индекс первого символа Stockpile
-                j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
-                k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
-                stockpile_str = text[j:k]                           # Извлекаем число в виде строки
-                stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
-                stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
-                stockpiles.append(stockpile)                        # Заносим число в список
-        except ValueError:
-            return "Error"
+        stockpiles = []
+        i = 0
+        while len(stockpiles) < 9:
+            i = text.find(STOCKPILE_STRING, i + 1)              # Получаем индекс первого символа Stockpile
+            j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
+            k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
+            stockpile_str = text[j:k]                           # Извлекаем число в виде строки
+            stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
+            stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
+            stockpiles.append(stockpile)                        # Заносим число в список
         
         # Создаем и добавляем запись в БД
         cpr_stockpile = CPRStockpile(date)
@@ -126,56 +131,50 @@ def write_stockpiles(reader: PdfReader, session: orm.Session, date: str):
         cpr_stockpile.huaneng_caofeidian_stockpile = stockpiles[6]
         cpr_stockpile.huanghua_stockpile = stockpiles[7]
         cpr_stockpile.guangzhou_stockpile = stockpiles[8]
+        cpr_stockpile.huadian_caofeidian_stockpile = 0
         cpr_stockpile.calculate_general_stockpile()
 
         session.commit()                                            # Записываем данные в БД
-
-        return "Added"
-    else:                                                           # Если запись существует, пропускаем парсинг
-        return "Skipped"
     
 # Парсит данные о запасах CPR и записывает в базу данных ВТОРЫМ способом
 def write_stockpiles_v2(text: str, session: orm.Session, date: str):
     cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
-
-    if not cpr_stockpile:                                           # Если запись не существует, начинаем парсинг
-        # Парсим запасы
-        try:
-            stockpiles = []
-            i = 0
-            while len(stockpiles) < 9:
-                i = text.find(STOCKPILE_STRING.lower(), i + 1)      # Получаем индекс первого символа Stockpile
-                j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
-                k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
-                stockpile_str = text[j:k]                           # Извлекаем число в виде строки
-                stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
-                stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
-                stockpiles.append(stockpile)                        # Заносим число в список
-        except ValueError:
-            return "Error"
+    
+    start_index = text.find(CHINESE_COAL_PORTS_ROUNDUP_STRING)
+    
+    stockpiles = {}
+    for port in CHINESE_COAL_PORTS:
+        i = text.find(port[0], start_index)
         
-        # Создаем и добавляем запись в БД
+        if i != -1:
+            i = text.find(STOCKPILE_STRING.lower(), i + 1)      # Получаем индекс первого символа Stockpile
+            j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
+            k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
+            stockpile_str = text[j:k]                           # Извлекаем число в виде строки
+            stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
+            stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
+            stockpiles[port[1]] = stockpile
+        else:
+            stockpiles[port[1]] = 0
+    
+    if not cpr_stockpile:
         cpr_stockpile = CPRStockpile(date)
         session.add(cpr_stockpile)
         
-        # Записываем данные в сущность
         cpr_stockpile.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        cpr_stockpile.qinhuangdao_stockpile = stockpiles[0]
-        cpr_stockpile.sdic_jingtang_stockpile = stockpiles[1]
-        cpr_stockpile.jingtang_terminal_stockpile = stockpiles[2]
-        cpr_stockpile.old_jingtang_stockpile = stockpiles[3]
-        cpr_stockpile.sdic_caofeidian_stockpile = stockpiles[4]
-        cpr_stockpile.caofeidian_phase2_stockpile = stockpiles[5]
-        cpr_stockpile.huaneng_caofeidian_stockpile = stockpiles[6]
-        cpr_stockpile.huanghua_stockpile = stockpiles[7]
-        cpr_stockpile.guangzhou_stockpile = stockpiles[8]
+        cpr_stockpile.qinhuangdao_stockpile = stockpiles[CHINESE_COAL_PORTS[0][1]]
+        cpr_stockpile.sdic_jingtang_stockpile = stockpiles[CHINESE_COAL_PORTS[1][1]]
+        cpr_stockpile.jingtang_terminal_stockpile = stockpiles[CHINESE_COAL_PORTS[2][1]]
+        cpr_stockpile.old_jingtang_stockpile = stockpiles[CHINESE_COAL_PORTS[3][1]]
+        cpr_stockpile.sdic_caofeidian_stockpile = stockpiles[CHINESE_COAL_PORTS[4][1]]
+        cpr_stockpile.caofeidian_phase2_stockpile = stockpiles[CHINESE_COAL_PORTS[5][1]]
+        cpr_stockpile.huaneng_caofeidian_stockpile = stockpiles[CHINESE_COAL_PORTS[6][1]]
+        cpr_stockpile.huadian_caofeidian_stockpile = stockpiles[CHINESE_COAL_PORTS[7][1]]
+        cpr_stockpile.huanghua_stockpile = stockpiles[CHINESE_COAL_PORTS[8][1]]
+        cpr_stockpile.guangzhou_stockpile = stockpiles[CHINESE_COAL_PORTS[9][1]]
         cpr_stockpile.calculate_general_stockpile()
-
+        
         session.commit()                                            # Записываем данные в БД
-
-        return "Added"
-    else:                                                           # Если запись существует, пропускаем парсинг
-        return "Skipped"
 
 # Парсит и записывает CCI индексы в базу данных ПЕРВЫМ способом
 def write_cci_indicies(reader: PdfReader, session: orm.Session, date: str):
@@ -195,20 +194,12 @@ def write_cci_indicies(reader: PdfReader, session: orm.Session, date: str):
         k = text.find(' ', j)
         cci_4700_str = text[j:k]
 
-        try:
-            # Заносим данные в сущность
-            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-            index.cci_4700 = float(cci_4700_str)
-            index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
-            
-            session.commit()            # Записываем данные в БД
-
-            return "Added"
-        except ValueError:
-            session.rollback()
-            return "Error"
-    else:                                                           # Если все индексы заполнены - пропускаем парсинг
-        return "Skipped"
+        # Заносим данные в сущность
+        index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+        index.cci_4700 = float(cci_4700_str)
+        index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
+        
+        session.commit()            # Записываем данные в БД
     
 # Парсит и записывает CCI индексы в базу данных ВТОРЫМ способом
 def write_cci_indicies_v2(text: str, session: orm.Session, date: str):
@@ -228,20 +219,12 @@ def write_cci_indicies_v2(text: str, session: orm.Session, date: str):
         k = text.find(' ', j)
         cci_4700_str = text[j:k]
 
-        try:
-            # Заносим данные в сущность
-            index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-            index.cci_4700 = float(cci_4700_str)
-            index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
-            
-            session.commit()            # Записываем данные в БД
-
-            return "Added"
-        except ValueError:
-            session.rollback()
-            return "Error"
-    else:                                                           # Если все индексы заполнены - пропускаем парсинг
-        return "Skipped"
+        # Заносим данные в сущность
+        index.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+        index.cci_4700 = float(cci_4700_str)
+        index.cci_4600 = round(index.cci_4700 / 4700 * 4600, 2)
+        
+        session.commit()            # Записываем данные в БД
 
 # Парсит данные о фрахтах и записывает в базу данных
 def write_freight(reader: PdfReader, session: orm.Session, date: str):
@@ -256,33 +239,25 @@ def write_freight(reader: PdfReader, session: orm.Session, date: str):
         page = reader.pages[2]                                      # Открываем первую страницу
         text = page.extract_text().replace("\n", " ")               # Достаем текст из страницы
 
-        try:
-            # Indonesia-S Korea rate
-            i = text.find(FREIGHT_STRING_1, 0)                      # Получаем индекс начала слова
-            j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа
-            k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
-            freight.indonesia_to_korea_rate = float(text[j:k])      # Получаем число
+        # Indonesia-S Korea rate
+        i = text.find(FREIGHT_STRING_1, 0)                      # Получаем индекс начала слова
+        j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа
+        k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
+        freight.indonesia_to_korea_rate = float(text[j:k])      # Получаем число
 
-            # Indonesia-EC India rate
-            i = text.find(FREIGHT_STRING_2, 0)                      # Получаем индекс начала слова
-            j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа                          
-            k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
-            freight.indonesia_to_india_rate = float(text[j:k])      # Получаем число
+        # Indonesia-EC India rate
+        i = text.find(FREIGHT_STRING_2, 0)                      # Получаем индекс начала слова
+        j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа                          
+        k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
+        freight.indonesia_to_india_rate = float(text[j:k])      # Получаем число
 
-            # Indonesia-S China rate
-            i = text.find(FREIGHT_STRING_3, 0)                      # Получаем индекс начала слова
-            j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа
-            k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
-            freight.indonesia_to_china_rate = float(text[j:k])      # Получаем число
+        # Indonesia-S China rate
+        i = text.find(FREIGHT_STRING_3, 0)                      # Получаем индекс начала слова
+        j = text.find("Coal", i) + 5                            # Просчитываем положение первого символа числа
+        k = text.find(' ', j)                                   # Просчитываем положение пробела после числа
+        freight.indonesia_to_china_rate = float(text[j:k])      # Получаем число
 
-            session.commit()                                        # Записываем данные в БД
-
-            return 'Added'
-        except ValueError:
-            session.rollback()
-            return "Error"
-    else:
-        return "Skipped"
+        session.commit()                                        # Записываем данные в БД
 
 # Точка входа
 def main():
@@ -319,27 +294,22 @@ def main():
                 if first_word == 'cci':
                     # Новый файл, используем второй вариант парсинга
                     
-                    text = extract_text_from_images_in_pdf(pdf_path).lower()                            # Извлекаем текст из картинок в PDF файле
-                    result_stockpiles = write_stockpiles_v2(text, session, file_data[1])                # Парсим запасы
-                    result_cci = write_cci_indicies_v2(text, session, file_data[1])                     # Парсим индексы
+                    logger.info(f"Parsing '{file_data[0]}' file")
+                    text = extract_text_from_images_in_pdf(pdf_path).lower()                # Извлекаем текст из картинок в PDF файле
+                    write_stockpiles_v2(text, session, file_data[1])                        # Парсим запасы
+                    write_cci_indicies_v2(text, session, file_data[1])                      # Парсим индексы
                     
-                    logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
-                    logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
-                    
-                    if result_stockpiles != "Error" and result_cci != 'Error':
-                        utils.archive_file(pdf_path)
+                    utils.archive_file(pdf_path)
                 else:
                     # Старый файл, используем первый вариант парсинга
                     
-                    result_stockpiles = write_stockpiles(reader, session, file_data[1])                 # Парсим запасы
-                    result_cci = write_cci_indicies(reader, session, file_data[1])                      # Парсим индексы
+                    logger.info(f"Parsing '{file_data[0]}' file")
+                    write_stockpiles(reader, session, file_data[1])                         # Парсим запасы
+                    write_cci_indicies(reader, session, file_data[1])                       # Парсим индексы
                     
-                    logger.info(f"Parsing '{file_data[0]}' file: [Stockpiles {result_stockpiles}]")
-                    logger.info(f"Parsing '{file_data[0]}' file: [CCI {result_cci}]")
-                    
-                    if result_stockpiles != "Error" and result_cci != 'Error':
-                        utils.archive_file(pdf_path)
+                    utils.archive_file(pdf_path)
             except:
+                session.rollback()
                 logger.exception(f"File '{file_data[0]}' parsing exception")
 
         # Получаем список файлов Freight
@@ -363,12 +333,12 @@ def main():
                 pdf_path = os.path.join(FREIGHT_DIR, file_data[0])                                  # Формируем путь к файлу
                 reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
                 
-                result = write_freight(reader, session, file_data[1])                               # Парсим запасы
-                logger.info(f"Parsing '{file_data[0]}' file: [Freight {result}]")
+                write_freight(reader, session, file_data[1])                                        # Парсим запасы
+                logger.info(f"Parsing '{file_data[0]}' file")
                 
-                if result != "Error":
-                    utils.archive_file(pdf_path)
+                utils.archive_file(pdf_path)
             except:
+                session.rollback()
                 logger.exception(f"File '{file_data[0]}' parsing exception")
             
         logger.info("Done!")

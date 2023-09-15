@@ -38,19 +38,20 @@ class CPRStockpile(Base):
     __tablename__ = "cpr_stockpiles"
     
     # Столбцы
-    cprs_id = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
-    update_timestamp = Column(INTEGER, nullable=False)                  # Время последнего обновления строки
-    date = Column(VARCHAR(10), unique=True, nullable=False)             # Дата
-    qinhuangdao_stockpile = Column(INTEGER, nullable=False)             # Запас в Qinhuangdao
-    sdic_jingtang_stockpile = Column(INTEGER, nullable=False)           # Запас в SDIC Jingtang
-    jingtang_terminal_stockpile = Column(INTEGER, nullable=False)       # Запас в Jingtang Terminal
-    old_jingtang_stockpile = Column(INTEGER, nullable=False)            # Запас в Old Jingtang
-    sdic_caofeidian_stockpile = Column(INTEGER, nullable=False)         # Запас в SDIC Caofeidian
-    caofeidian_phase2_stockpile = Column(INTEGER, nullable=False)       # Запас в Caofeidian Phase II
-    huaneng_caofeidian_stockpile = Column(INTEGER, nullable=False)      # Запас в Huaneng Caofeidian
-    huanghua_stockpile = Column(INTEGER, nullable=False)                # Запас в Huanghua
-    guangzhou_stockpile = Column(INTEGER, nullable=False)               # Запас в Guangzhou
-    general_stockpile = Column(INTEGER, nullable=False)                 # Общий запас
+    cprs_id = Column(INTEGER, primary_key=True, autoincrement=True)                 # Первичный ключ
+    update_timestamp = Column(INTEGER, nullable=False)                              # Время последнего обновления строки
+    date = Column(VARCHAR(10), unique=True, nullable=False, default=0)              # Дата
+    qinhuangdao_stockpile = Column(INTEGER, nullable=False, default=0)              # Запас в Qinhuangdao
+    sdic_jingtang_stockpile = Column(INTEGER, nullable=False, default=0)            # Запас в SDIC Jingtang
+    jingtang_terminal_stockpile = Column(INTEGER, nullable=False, default=0)        # Запас в Jingtang Terminal
+    old_jingtang_stockpile = Column(INTEGER, nullable=False, default=0)             # Запас в Old Jingtang
+    sdic_caofeidian_stockpile = Column(INTEGER, nullable=False, default=0)          # Запас в SDIC Caofeidian
+    caofeidian_phase2_stockpile = Column(INTEGER, nullable=False, default=0)        # Запас в Caofeidian Phase II
+    huaneng_caofeidian_stockpile = Column(INTEGER, nullable=False, default=0)       # Запас в Huaneng Caofeidian
+    huadian_caofeidian_stockpile = Column(INTEGER, nullable=False, default=0)       # Запас в Huadian Caofeidian
+    huanghua_stockpile = Column(INTEGER, nullable=False, default=0)                 # Запас в Huanghua
+    guangzhou_stockpile = Column(INTEGER, nullable=False, default=0)                # Запас в Guangzhou
+    general_stockpile = Column(INTEGER, nullable=False, default=0)                  # Общий запас
     
     # Конструктор
     def __init__(self, date: str):
@@ -65,6 +66,7 @@ class CPRStockpile(Base):
         self.general_stockpile += self.sdic_caofeidian_stockpile
         self.general_stockpile += self.caofeidian_phase2_stockpile
         self.general_stockpile += self.huaneng_caofeidian_stockpile
+        self.general_stockpile += self.huadian_caofeidian_stockpile
         self.general_stockpile += self.huanghua_stockpile
         self.general_stockpile += self.guangzhou_stockpile
 

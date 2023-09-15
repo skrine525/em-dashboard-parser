@@ -152,9 +152,10 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             sdic_caofeidian_stockpile = int(row[5])                                         # Получаем поле "SDIC Caofeidian"
             caofeidian_phase2_stockpile = int(row[6])                                       # Получаем поле "Caofeidian Phase II"
             huaneng_caofeidian_stockpile = int(row[7])                                      # Получаем поле "Huaneng Caofeidian"
-            huanghua_stockpile = int(row[8])                                                # Получаем поле "Huanghua"
-            guangzhou_stockpile = int(row[9])                                               # Получаем поле "Guangzhou"
-            update = False if np.isnan(row[10]) else bool(int(row[10]))                     # Получаем поле "Update?"
+            huadian_caofeidian_stockpile = int(row[8])                                      # Получаем поле "Huadian Caofeidian"
+            huanghua_stockpile = int(row[9])                                                # Получаем поле "Huanghua"
+            guangzhou_stockpile = int(row[10])                                              # Получаем поле "Guangzhou"
+            update = False if np.isnan(row[11]) else bool(int(row[11]))                     # Получаем поле "Update?"
             
             cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()
             
@@ -175,6 +176,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             cpr_stockpile.sdic_caofeidian_stockpile = sdic_caofeidian_stockpile
             cpr_stockpile.caofeidian_phase2_stockpile = caofeidian_phase2_stockpile
             cpr_stockpile.huaneng_caofeidian_stockpile = huaneng_caofeidian_stockpile
+            cpr_stockpile.huadian_caofeidian_stockpile = huadian_caofeidian_stockpile
             cpr_stockpile.huanghua_stockpile = huanghua_stockpile
             cpr_stockpile.guangzhou_stockpile = guangzhou_stockpile
             cpr_stockpile.calculate_general_stockpile()
