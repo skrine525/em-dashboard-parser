@@ -139,50 +139,45 @@ def get_gismeteo_month(city_url: str) -> list:
 
 # Точка входа
 def main():
-    # Собираем информацию о погоде
-    logger.info("Parsing: Weather")
-    weather_by_date = {}
-    for region in REGIONS:
-        # logger.info("Collecting {} diary weather".format(region[0]))
-        # diary_weather = get_gismeteio_diary(region[2], (2023, 5), (2023, 8))
-        # for weather in diary_weather:
-        #     if not (weather['date'] in weather_by_date):
-        #         weather_by_date[weather['date']] = {}
-        #     weather_by_date[weather['date']][region[0]] = weather['temp']
-        
-        # Получаем погоду региона на месяц и заносим данные в словарь
-        logger.info("Collecting {} month weather".format(region[0]))
-        month_weather = get_gismeteo_month(region[1])                       # Получаем погоду региона на месяц
-        for weather in month_weather:                                       # Итерируем каждый день месяца
-            if not (weather['date'] in weather_by_date):
-                # Если даты нет в словаре - добавляем
-                weather_by_date[weather['date']] = {}
-            weather_by_date[weather['date']][region[0]] = weather['temp']   # Записываем данные о температуре для региона на дату
+    session = Session()                                                      # Инициализация сессии БД
     
-    # Заносим данные в БД
-    logger.info("Commiting")
-    session = Session()                                                             # Инициализация сессии БД
-    for date in weather_by_date:
-        china_weather = session.query(ChinaWeather).filter_by(date=date).first()    # Ищем в БД запись по дате
+    try:
+        # Собираем информацию о погоде
+        logger.info("Parsing: Weather")
+        weather_by_date = {}
+        for region in REGIONS: 
+            # Получаем погоду региона на месяц и заносим данные в словарь
+            logger.info(f"Collecting {region[0]} month weather")
+            month_weather = get_gismeteo_month(region[1])                       # Получаем погоду региона на месяц
+            for weather in month_weather:                                       # Итерируем каждый день месяца
+                if not (weather['date'] in weather_by_date):
+                    # Если даты нет в словаре - добавляем
+                    weather_by_date[weather['date']] = {}
+                weather_by_date[weather['date']][region[0]] = weather['temp']   # Записываем данные о температуре для региона на дату
         
-        # Если запись в БД не существует, создаем и добавляем ее
-        if not china_weather:
-            china_weather = ChinaWeather(date)
-            session.add(china_weather)
+        # Заносим данные в БД
+        logger.info("Commiting")
+        for date in weather_by_date:
+            china_weather = session.query(ChinaWeather).filter_by(date=date).first()    # Ищем в БД запись по дате
             
-        # Заносим данные в сущность
-        china_weather.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        china_weather.beijing_temp = weather_by_date[date]['Beijing']
-        china_weather.guangzhou_temp = weather_by_date[date]['Guangzhou']
-        china_weather.shanghai_temp = weather_by_date[date]['Shanghai']
-        china_weather.nanjing_temp = weather_by_date[date]['Nanjing']
-        china_weather.calculate_average_temp()  # Просчитываем среднюю температуру по Китаю
+            # Если запись в БД не существует, создаем и добавляем ее
+            if not china_weather:
+                china_weather = ChinaWeather(date)
+                session.add(china_weather)
+                
+            # Заносим данные в сущность
+            china_weather.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            china_weather.beijing_temp = weather_by_date[date]['Beijing']
+            china_weather.guangzhou_temp = weather_by_date[date]['Guangzhou']
+            china_weather.shanghai_temp = weather_by_date[date]['Shanghai']
+            china_weather.nanjing_temp = weather_by_date[date]['Nanjing']
+            china_weather.calculate_average_temp()  # Просчитываем среднюю температуру по Китаю
 
-        session.commit()    # Записываем данные в БД
-    
-    session.close()         # Закрываем сессию БД
-    logger.info("Done!")
-
+            session.commit()    # Записываем данные в БД
+        
+        logger.info("Done!")
+    finally:
+        session.close()         # Закрываем сессию БД
 
 # Если файл был запущен, а не импортирован
 if __name__ == "__main__":
