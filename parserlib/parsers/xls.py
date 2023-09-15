@@ -56,8 +56,8 @@ def write_vostochny_indicies(excel_file: pd.ExcelFile, session: orm.Session):
             
             session.commit()                                            # Записываем данные в БД
     
-# Парсит индексы ICI3 и заносит в БД, возвращает количество строк, прочитанных с ошибками
-def write_ici3_indicies(excel_file: pd.ExcelFile, session: orm.Session) -> int:
+# Парсит индексы ICI3 и заносит в БД
+def write_ici3_indicies(excel_file: pd.ExcelFile, session: orm.Session):
     sheet_name = excel_file.sheet_names[0]                              # Получаем название листа
     
     if sheet_name == "Price history":
@@ -113,7 +113,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             cci_4700 = float(row[1])                                        # Получаем поле "CCI 4700"
             ici3 = float(row[2])                                            # Получаем поле "ICI3"
             vostochny_5500 = float(row[3])                                  # Получаем поле "FOB Vostochny 5500"
-            update = False if np.isnan(row[4]) else bool(int(row[4]))       # Получаем поле "Обновить?"
+            update = False if np.isnan(row[4]) else bool(int(row[4]))       # Получаем поле "Update?"
             
             index = session.query(Index).filter_by(date=date).first()       # Ищем запись в БД по дате
             
@@ -154,7 +154,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             huaneng_caofeidian_stockpile = int(row[7])                                      # Получаем поле "Huaneng Caofeidian"
             huanghua_stockpile = int(row[8])                                                # Получаем поле "Huanghua"
             guangzhou_stockpile = int(row[9])                                               # Получаем поле "Guangzhou"
-            update = False if np.isnan(row[10]) else bool(int(row[10]))                     # Получаем поле "Обновить?"
+            update = False if np.isnan(row[10]) else bool(int(row[10]))                     # Получаем поле "Update?"
             
             cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()
             
@@ -194,7 +194,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             indonesia_to_korea_rate = float(row[1])                                         # Получаем поле "Indonesia to Korea"
             indonesia_to_india_rate = float(row[2])                                         # Получаем поле "Indonesia to India"
             indonesia_to_china_rate = float(row[3])                                         # Получаем поле "Indonesia to China"
-            update = False if np.isnan(row[4]) else bool(int(row[4]))                       # Получаем поле "Обновить?"
+            update = False if np.isnan(row[4]) else bool(int(row[4]))                       # Получаем поле "Update?"
             
             freight = session.query(Freight).filter_by(date=date).first()                   # Ищем запись в БД по дате
             
@@ -226,7 +226,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             date = row[0].strftime("%Y-%m-%d")                                              # Форматируем дату для БД
             coal_last_price = float(row[1])                                                 # Получаем поле "Coal Last Price"
             gas_prior_settle = float(row[2])                                                # Получаем поле "Gas Prior Settle"
-            update = False if np.isnan(row[3]) else bool(int(row[3]))                       # Получаем поле "Обновить?"
+            update = False if np.isnan(row[3]) else bool(int(row[3]))                       # Получаем поле "Update?"
             
             future = session.query(Future).filter_by(date=date).first()                     # Ищем запись в БД по дате
             
@@ -259,7 +259,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             shanghai_temp = float(row[2])                                                   # Получаем поле "Shanghai Temp."
             guangzhou_temp = float(row[3])                                                  # Получаем поле "Guangzhou Temp."
             nanjing_temp = float(row[4])                                                    # Получаем поле "Nanjing Temp."
-            update = False if np.isnan(row[5]) else bool(int(row[5]))                       # Получаем поле "Обновить?"
+            update = False if np.isnan(row[5]) else bool(int(row[5]))                       # Получаем поле "Update?"
             
             china_weather = session.query(ChinaWeather).filter_by(date=date).first()        # Ищем запись в БД по дате
             

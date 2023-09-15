@@ -45,6 +45,9 @@ def download_cci():
                         with open(filepath, 'wb') as f:
                             f.write(attachment.content)
                         logger.info(f"File downloaded to '{filepath}'")
+                        
+        # Пемерещаем письмо в корзину
+        email.move_to_trash()
         
     logger.info("Done!")
     

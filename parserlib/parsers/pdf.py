@@ -63,7 +63,7 @@ def get_date_by_freight_filename(filename: str) -> str:
     return f"{year}-{month}-{day}"
 
 # Извлекает текст из всех картинок PDF файла
-def extract_text_from_images_in_pdf(pdf_path) -> str:
+def extract_text_from_images_in_pdf(pdf_path: str) -> str:
     pdf_document = fitz.open(pdf_path)
     
     text = ''
@@ -244,7 +244,7 @@ def write_cci_indicies_v2(text: str, session: orm.Session, date: str):
         return "Skipped"
 
 # Парсит данные о фрахтах и записывает в базу данных
-def write_freight(reader: PdfReader, session: orm.Session, date: str = None):
+def write_freight(reader: PdfReader, session: orm.Session, date: str):
     freight = session.query(Freight).filter_by(date=date).first()   # Ищем запись в БД по дате
 
     if not freight:                                                 # Если запись не существует - начинаем парсинг
