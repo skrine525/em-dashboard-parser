@@ -3,7 +3,7 @@ from exchangelib import Credentials, Account, Configuration, Q, DELEGATE
 from exchangelib.folders import DeletedItems
 from parserlib.logger import logger
 from parserlib.config import EMAIL_ADDRESS, EMAIL_PASSWORD, EMAIL_SERVER
-from parserlib.paths import CCI_DIR, MANUAL_DIR
+from parserlib.paths import cci_dir, manual_dir
 
 
 # Константы
@@ -34,7 +34,7 @@ def download_cci():
                 if attachment.content_type == 'application/pdf' and attachment.name.find("CCI Daily") != -1:
                     # Если вложение является PDF-файлом и название содержит 'CCI Daily'
                     
-                    filepath = os.path.join(CCI_DIR, attachment.name)
+                    filepath = os.path.join(cci_dir, attachment.name)
                     if os.path.exists(filepath):
                         # Если файл существует, пропускаем скачивание
                         
@@ -74,7 +74,7 @@ def download_manual_xlsx():
                 if attachment.content_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
                     # Если вложение является XLSX-файлом
                     
-                    filepath = os.path.join(MANUAL_DIR, attachment.name)
+                    filepath = os.path.join(manual_dir, attachment.name)
                     if os.path.exists(filepath):
                         # Если файл существует, пропускаем скачивание
                         

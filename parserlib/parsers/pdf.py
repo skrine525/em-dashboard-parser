@@ -7,7 +7,7 @@ from parserlib import utils
 from parserlib.db.model import CPRStockpile, Index, Freight
 from parserlib.db.engine import Session
 from parserlib.logger import logger
-from parserlib.paths import CCI_DIR, FREIGHT_DIR
+from parserlib.paths import cci_dir, freight_dir
 
 
 # Константы
@@ -216,6 +216,7 @@ def write_cci_indicies_v2(text: str, session: orm.Session, date: str):
         i = text.find(CCI_STRING_V2, 0)
         i = text.find(CCI_CHINA_STRING, i + 1)
         j = i + len(CCI_CHINA_STRING) + 1
+        j = text.find(' ', j) + 1
         k = text.find(' ', j)
         cci_4700_str = text[j:k]
 
@@ -267,7 +268,7 @@ def main():
         logger.info("Parsing: PDF files")
         
         # Получаем список файлов CCI
-        pdf_files = os.listdir(CCI_DIR)
+        pdf_files = os.listdir(cci_dir)
         sorted_pdf_files = []
         for filename in pdf_files:
             # Просчитываем дату из названия файла
@@ -284,7 +285,7 @@ def main():
         # Итерируем файлы и парсим 
         for file_data in sorted_pdf_files:
             try:
-                pdf_path = os.path.join(CCI_DIR, file_data[0])                                          # Формируем путь к файлу
+                pdf_path = os.path.join(cci_dir, file_data[0])                                          # Формируем путь к файлу
                 reader = PdfReader(pdf_path)                                                            # Создаем "читателя" файла
                 page1_text = reader.pages[0].extract_text()                                             # Достаем текст из первой страницы страницы
                 i = page1_text.find(' ')
@@ -313,7 +314,7 @@ def main():
                 logger.exception(f"File '{file_data[0]}' parsing exception")
 
         # Получаем список файлов Freight
-        pdf_files = os.listdir(FREIGHT_DIR)
+        pdf_files = os.listdir(freight_dir)
         sorted_pdf_files = []
         for filename in pdf_files:
             # Просчитываем дату из названия файла
@@ -330,7 +331,7 @@ def main():
         # Итерируем файлы и парсим 
         for file_data in sorted_pdf_files:
             try:
-                pdf_path = os.path.join(FREIGHT_DIR, file_data[0])                                  # Формируем путь к файлу
+                pdf_path = os.path.join(freight_dir, file_data[0])                                  # Формируем путь к файлу
                 reader = PdfReader(pdf_path)                                                        # Создаем "читателя" файла
                 
                 write_freight(reader, session, file_data[1])                                        # Парсим запасы

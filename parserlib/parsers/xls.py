@@ -6,7 +6,7 @@ from parserlib import utils
 from parserlib.db.engine import Session
 from parserlib.db.model import Index, CPRStockpile, Freight, ChinaWeather, Future
 from parserlib.logger import logger
-from parserlib.paths import VOSTOCHNY_DIR, ICI3_DIR, MANUAL_DIR
+from parserlib.paths import vostochny_dir, ici3_dir, manual_dir
 
 
 # Парсит индексы FOB Vostochny и заносит в БД
@@ -294,13 +294,13 @@ def parse_manual_input_files():
         logger.info("Parsing: Manual XLSX files")
         
         # Парсим "ручные" XLSX файлы
-        manual_files = os.listdir(MANUAL_DIR)
+        manual_files = os.listdir(manual_dir)
         for filename in manual_files:
             logger.info(f"Parsing '{filename}' file")
             
             try:
                 # Открываем файл
-                xlsx_path = os.path.join(MANUAL_DIR, filename)
+                xlsx_path = os.path.join(manual_dir, filename)
                 excel_file = pd.ExcelFile(xlsx_path)
                 
                 # Парсим файл и закрываем его
@@ -323,12 +323,12 @@ def parse_downloaded_files():
         logger.info("Parsing: XLS files")
         
         # Парсинг файлов FOV Vostochny
-        vostochny_files = os.listdir(VOSTOCHNY_DIR)
+        vostochny_files = os.listdir(vostochny_dir)
         for filename in vostochny_files:
             logger.info(f"Parsing '{filename}' file")
             
             try:# Открываем файл
-                xls_path = os.path.join(VOSTOCHNY_DIR, filename)
+                xls_path = os.path.join(vostochny_dir, filename)
                 excel_file = pd.ExcelFile(xls_path)
                 
                 # Парсим файл и закрываем его
@@ -340,13 +340,13 @@ def parse_downloaded_files():
                 logger.exception(f"File '{filename}' parsing exception")
         
         # Парсинг файлов ICI3
-        ici3_files = os.listdir(ICI3_DIR)
+        ici3_files = os.listdir(ici3_dir)
         for filename in ici3_files:
             logger.info(f"Parsing '{filename}' file")
             
             try:
                 # Открываем файл
-                xls_path = os.path.join(ICI3_DIR, filename)
+                xls_path = os.path.join(ici3_dir, filename)
                 excel_file = pd.ExcelFile(xls_path)
                 
                 # Парсим файл и закрываем его

@@ -5,7 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from parserlib.config import ARGUS_USERNAME, ARGUS_PASSWORD
-from parserlib.paths import DOWNLOADING_DIR, FREIGHT_DIR, ICI3_DIR, VOSTOCHNY_DIR
+from parserlib.paths import downloading_dir, freight_dir, ici3_dir, vostochny_dir
 from parserlib.logger import logger
 
 
@@ -17,7 +17,7 @@ USERNAME_INPUT_XPATH = "/html/body/app-root/app-public/div[2]/div/app-login/div/
 PASSWORD_INPUT_XPATH = "/html/body/app-root/app-public/div[2]/div/app-login/div/div/form/div[1]/div/div[2]/input"
 SIGNIN_BUTTON_XPATH = "/html/body/app-root/app-public/div[2]/div/app-login/div/div/form/div[2]/div/button"
 NAVMENU_PUBLICATIONS_XPATH = "/html/body/app-root/app-layout/navbar-menu/nav/div/div[1]/div[7]"
-NAVMENU_PUBLICATIONS_DRYFREIGHT_PDF_XPATH = "/html/body/div[@class='ng-trigger ng-trigger-overlayAnimation ng-tns-c48-12 menu-scrollable p-menu p-component p-menu-overlay ng-star-inserted']/ul[@class='p-menu-list p-reset ng-tns-c48-12']/li[@class='p-element p-menuitem ng-tns-c48-12 publication-item ng-star-inserted'][1]/a[@id='ScrollableGroup']/span[@class='p-menuitem-text ng-star-inserted']/a[@id='pdf-link']"
+NAVMENU_PUBLICATIONS_DRYFREIGHT_PDF_XPATH = "/html/body/div[@class='ng-trigger ng-trigger-overlayAnimation ng-tns-c48-9 menu-scrollable p-menu p-component p-menu-overlay ng-star-inserted']/ul[@class='p-menu-list p-reset ng-tns-c48-9']/li[@class='p-element p-menuitem ng-tns-c48-9 publication-item ng-star-inserted'][1]/a[@id='ScrollableGroup']/span[@class='p-menuitem-text ng-star-inserted']/a[@id='pdf-link']"
 PRICEDATA_IFRAME_XPATH = "/html/body/app-root/app-layout/app-direct-frame/app-frame/iframe"
 ICI3_CHECKBOX_XPATH = "//*[@id='myPrices-42530000-4']/td[1]/input"
 VOSTOCHNY_CHECKBOX_XPATH = "//*[@id='myPrices-202040600-8']/td[1]/input"
@@ -29,10 +29,10 @@ HOMEPAGE_IFRAME_XPATH = "/html/body/app-root/app-layout/app-direct-frame/app-fra
 chrome_options = Options()
 chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument("--headless=new")
+#chrome_options.add_argument("--headless=new")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
 chrome_options.add_experimental_option('prefs', {
-    'download.default_directory': DOWNLOADING_DIR,
+    'download.default_directory': downloading_dir,
     'download.prompt_for_download': False,
     'download.directory_upgrade': True,
     'safebrowsing.enabled': False
@@ -67,8 +67,8 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Очищаем папку загрузок
     logger.info("Cleaning up the download directory")
-    for filename in os.listdir(DOWNLOADING_DIR):
-        filepath = os.path.join(DOWNLOADING_DIR, filename)
+    for filename in os.listdir(downloading_dir):
+        filepath = os.path.join(downloading_dir, filename)
         os.remove(filepath)
     
     # Переключаемся на стандартный контент
@@ -89,7 +89,7 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
     # Проивзодим поиск загруженного файла по расширению
     target_filename = None
     while True:
-        for filename in os.listdir(DOWNLOADING_DIR):
+        for filename in os.listdir(downloading_dir):
             if filename.endswith("pdf"):
                 target_filename = filename
                 break
@@ -99,7 +99,7 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
             break
         else:
             time.sleep(1)
-    target_filepath = os.path.join(DOWNLOADING_DIR, target_filename)
+    target_filepath = os.path.join(downloading_dir, target_filename)
     logger.info(f"File '{target_filename}' downloaded")
     
     # Получаем дату из названия файла
@@ -109,12 +109,12 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Переименовываем файл и отправляем в директорию для парсинга
     fixed_filename = f"{date}_Argus_Freight.pdf"
-    fixed_filepath = os.path.join(FREIGHT_DIR, fixed_filename)
+    fixed_filepath = os.path.join(freight_dir, fixed_filename)
     if os.path.exists(fixed_filepath):
         logger.info(f"File '{fixed_filepath}' already exists")
     else:
         os.rename(target_filepath, fixed_filepath)
-        logger.info(f"File '{fixed_filename}' moved to '{FREIGHT_DIR}'")
+        logger.info(f"File '{fixed_filename}' moved to '{freight_dir}'")
     
     logger.info("Done!")
         
@@ -124,8 +124,8 @@ def download_ici3_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Очищаем папку загрузок
     logger.info("Cleaning up the download directory")
-    for filename in os.listdir(DOWNLOADING_DIR):
-        filepath = os.path.join(DOWNLOADING_DIR, filename)
+    for filename in os.listdir(downloading_dir):
+        filepath = os.path.join(downloading_dir, filename)
         os.remove(filepath)
     
     # Переходим на страницу с ценовыми данными
@@ -148,7 +148,7 @@ def download_ici3_file(driver: webdriver.Chrome, wait: WebDriverWait):
     # Проивзодим поиск загруженного файла по расширению
     target_filename = None
     while True:
-        for filename in os.listdir(DOWNLOADING_DIR):
+        for filename in os.listdir(downloading_dir):
             if filename.endswith("xls"):
                 target_filename = filename
                 break
@@ -158,7 +158,7 @@ def download_ici3_file(driver: webdriver.Chrome, wait: WebDriverWait):
             break
         else:
             time.sleep(1)
-    target_filepath = os.path.join(DOWNLOADING_DIR, target_filename)
+    target_filepath = os.path.join(downloading_dir, target_filename)
     logger.info(f"File '{target_filename}' downloaded")
     
     # Получаем дату из названия файла
@@ -168,12 +168,12 @@ def download_ici3_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Переименовываем файл и отправляем в директорию для парсинга
     fixed_filename = f"ICI3 ({date}).xls"
-    fixed_filepath = os.path.join(ICI3_DIR, fixed_filename)
+    fixed_filepath = os.path.join(ici3_dir, fixed_filename)
     if os.path.exists(fixed_filepath):
         logger.info(f"File '{fixed_filepath}' already exists")
     else:
         os.rename(target_filepath, fixed_filepath)
-        logger.info(f"File '{fixed_filename}' moved to '{ICI3_DIR}'")
+        logger.info(f"File '{fixed_filename}' moved to '{ici3_dir}'")
         
     logger.info("Done!")
     
@@ -183,8 +183,8 @@ def download_vostochny_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Очищаем папку загрузок
     logger.info("Cleaning up the download directory")
-    for filename in os.listdir(DOWNLOADING_DIR):
-        filepath = os.path.join(DOWNLOADING_DIR, filename)
+    for filename in os.listdir(downloading_dir):
+        filepath = os.path.join(downloading_dir, filename)
         os.remove(filepath)
     
     # Переходим на страницу с ценовыми данными
@@ -207,7 +207,7 @@ def download_vostochny_file(driver: webdriver.Chrome, wait: WebDriverWait):
     # Проивзодим поиск загруженного файла по расширению
     target_filename = None
     while True:
-        for filename in os.listdir(DOWNLOADING_DIR):
+        for filename in os.listdir(downloading_dir):
             if filename.endswith("xls"):
                 target_filename = filename
                 break
@@ -217,7 +217,7 @@ def download_vostochny_file(driver: webdriver.Chrome, wait: WebDriverWait):
             break
         else:
             time.sleep(1)
-    target_filepath = os.path.join(DOWNLOADING_DIR, target_filename)
+    target_filepath = os.path.join(downloading_dir, target_filename)
     logger.info(f"File '{target_filename}' downloaded")
     
     # Получаем дату из названия файла
@@ -227,12 +227,12 @@ def download_vostochny_file(driver: webdriver.Chrome, wait: WebDriverWait):
     
     # Переименовываем файл и отправляем в директорию для парсинга
     fixed_filename = f"FOB Vostochny ({date}).xls"
-    fixed_filepath = os.path.join(VOSTOCHNY_DIR, fixed_filename)
+    fixed_filepath = os.path.join(vostochny_dir, fixed_filename)
     if os.path.exists(fixed_filepath):
         logger.info(f"File '{fixed_filepath}' already exists")
     else:
         os.rename(target_filepath, fixed_filepath)
-        logger.info(f"File '{fixed_filename}' moved to '{VOSTOCHNY_DIR}'")
+        logger.info(f"File '{fixed_filename}' moved to '{vostochny_dir}'")
         
     logger.info("Done!")
 

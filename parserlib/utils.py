@@ -21,16 +21,16 @@ def archive_file(src: str):
     dst = ""                                                            # Место назначения файла
     
     # Определяем, куда класть файл
-    if directory == os.path.basename(paths.CCI_DIR):
-        dst = paths.ARCHIVE_CCI_DIR
-    elif directory == os.path.basename(paths.FREIGHT_DIR):
-        dst = paths.ARCHIVE_FREIGHT_DIR
-    elif directory == os.path.basename(paths.ICI3_DIR):
-        dst = paths.ARCHIVE_ICI3_DIR
-    elif directory == os.path.basename(paths.VOSTOCHNY_DIR):
-        dst = paths.ARCHIVE_VOSTOCHNY_DIR
-    elif directory == os.path.basename(paths.MANUAL_DIR):
-        dst = paths.ARCHIVE_MANUAL_DIR
+    if directory == os.path.basename(paths.cci_dir):
+        dst = paths.archive_cci_dir
+    elif directory == os.path.basename(paths.freight_dir):
+        dst = paths.archive_freight_dir
+    elif directory == os.path.basename(paths.ici3_dir):
+        dst = paths.archive_ici3_dir
+    elif directory == os.path.basename(paths.vostochny_dir):
+        dst = paths.archive_vostochny_dir
+    elif directory == os.path.basename(paths.manual_dir):
+        dst = paths.archive_manual_dir
     else:
         raise UnknownDirectoryError(directory)
     
