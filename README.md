@@ -66,11 +66,11 @@
     ```
 - Скачивание файлов **CCI Daily** из почты:
     ```bash
-    python3.8 parse.py cci
+    python3.8 download.py cci
     ```
 - Скачивание **"ручных" XLSX файлов** из почты:
     ```bash
-    python3.8 parse.py manual-xlsx
+    python3.8 download.py manual-xlsx
     ```
 
 ## Парсинг
