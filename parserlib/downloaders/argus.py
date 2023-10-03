@@ -29,7 +29,7 @@ HOMEPAGE_IFRAME_XPATH = "/html/body/app-root/app-layout/app-direct-frame/app-fra
 chrome_options = Options()
 chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument('--no-sandbox')
-#chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--headless=new")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
 chrome_options.add_experimental_option('prefs', {
     'download.default_directory': downloading_dir,
