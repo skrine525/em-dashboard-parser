@@ -36,7 +36,7 @@ MONTHS = [
     ['Jul', 7, '07'],
     ['Aug', 8, '08'],
     ['Sep', 9, '09'],
-    ['Ocr', 10, '10'],
+    ['Oct', 10, '10'],
     ['Nov', 11, '11'],
     ['Dec', 12, '12'],
 ]
@@ -75,6 +75,7 @@ def extract_text_from_images_in_pdf(pdf_path: str) -> str:
     pdf_document = fitz.open(pdf_path)
     
     text = ''
+    logger.debug(f"Extracting text using Tesseract OCR: '{pdf_path}'")
     for page_number in range(pdf_document.page_count):
         page = pdf_document.load_page(page_number)
         image_list = page.get_images(full=True)
@@ -92,8 +93,12 @@ def extract_text_from_images_in_pdf(pdf_path: str) -> str:
             
             custom_config = r'--oem 3 --psm 6'  # Опции для распознавания (с права налево, сверху вниз)
             text += pytesseract.image_to_string(image, config=custom_config, lang='eng')
+            
+            # Отладочное логирование
+            logger.debug(f"Text extracted from {page_number} page, {img_index} picture")
     
     pdf_document.close()
+    logger.debug("Text extraction completed")
     return text
 
 # Парсит данные о запасах CPR и записывает в базу данных ПЕРВЫМ способом
