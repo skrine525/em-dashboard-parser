@@ -15,7 +15,8 @@ CCI_STRING = "CCI 4700 Import^"
 CCI_STRING_V2 = "cci 4700 import"
 CCI_CHINA_STRING = 'china'
 STOCKPILE_STRING = "Stockpile"
-CHINESE_COAL_PORTS_ROUNDUP_STRING = "chinese coal ports roundup"
+GUANGZHOU_PORT_STRING = 'guangzhou port'
+STOCKPILES_SEARCH_START_STRING = "qinhuangdao"
 FREIGHT_STRING_1 = "Indonesia-S Korea"
 FREIGHT_STRING_2 = "Indonesia-EC India"
 FREIGHT_STRING_3 = "Indonesia-S China"
@@ -145,19 +146,26 @@ def write_stockpiles(reader: PdfReader, session: orm.Session, date: str):
 def write_stockpiles_v2(text: str, session: orm.Session, date: str):
     cpr_stockpile = session.query(CPRStockpile).filter_by(date=date).first()    # Ищем запись в БД по дате
     
-    start_index = text.find(CHINESE_COAL_PORTS_ROUNDUP_STRING)
+    start_index = text.find(STOCKPILES_SEARCH_START_STRING)
     
     stockpiles = {}
     for port in CHINESE_COAL_PORTS:
         i = text.find(port[0], start_index)
         
         if i != -1:
-            i = text.find(STOCKPILE_STRING.lower(), i + 1)      # Получаем индекс первого символа Stockpile
-            j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
-            k = text.find(' ', j)                               # Просчитываем индекс пробела после числа
-            stockpile_str = text[j:k]                           # Извлекаем число в виде строки
-            stockpile_str = stockpile_str.replace(',', '')      # Избавляемся от запятой в строке
-            stockpile = int(float(stockpile_str))               # Получаем числовую переменную из строки
+            if port[0] == "guangzhou":
+                # Получаем индекс числа для порта Guangzhou
+                i = text.find(GUANGZHOU_PORT_STRING, i + 1)         # Получаем индекс первого символа Stockpile
+                j = i + len(GUANGZHOU_PORT_STRING) + 1              # Просчитываем первый символ числа
+            else:
+                # Получаем индекс числа для остальных портов
+                i = text.find(STOCKPILE_STRING.lower(), i + 1)      # Получаем индекс первого символа Stockpile
+                j = i + len(STOCKPILE_STRING) + 1                   # Просчитываем первый символ числа
+
+            k = text.find(' ', j)                                   # Просчитываем индекс пробела после числа
+            stockpile_str = text[j:k]                               # Извлекаем число в виде строки
+            stockpile_str = stockpile_str.replace(',', '')          # Избавляемся от запятой в строке
+            stockpile = int(float(stockpile_str))                   # Получаем числовую переменную из строки
             stockpiles[port[1]] = stockpile
         else:
             stockpiles[port[1]] = 0
