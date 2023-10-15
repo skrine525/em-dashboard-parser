@@ -31,6 +31,8 @@ def archive_file(src: str):
         dst = paths.archive_vostochny_dir
     elif directory == os.path.basename(paths.manual_dir):
         dst = paths.archive_manual_dir
+    elif directory == os.path.basename(paths.rail_export_dir):
+        dst = paths.archive_rail_export_dir
     else:
         raise UnknownDirectoryError(directory)
     

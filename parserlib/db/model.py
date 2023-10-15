@@ -118,6 +118,7 @@ class Freight(Base):
     def __repr__(self):
         return f"<Freight({self.freight_id}, {self.date})>"
 
+
 # Фьючерсы
 class Future(Base):
     __tablename__ = "futures"
@@ -135,3 +136,23 @@ class Future(Base):
     # Преобразование в строку
     def __repr__(self):
         return f"<Future({self.freight_id}, {self.date})>"
+
+
+# Ж/д перевозки угля
+class RailCoalExport(Base):
+    __tablename__ = "rail_coal_exports"
+    
+    rce_idf = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
+    update_timestamp = Column(INTEGER, nullable=False)                  # Время последнего обновления строки
+    date = Column(VARCHAR(10), unique=True, nullable=False)             # Дата
+    southern_volume = Column(INTEGER)                                   # Объем Южного направления
+    eastern_volume = Column(INTEGER)                                    # Объем Восточного направления
+    northwestern_volume = Column(INTEGER)                               # Объем Северозападного направления
+    
+    # Конструктор
+    def __init__(self, date: str):
+        self.date = date
+
+    # Преобразование в строку
+    def __repr__(self):
+        return f"<RailCoalExport({self.freight_id}, {self.date})>"
