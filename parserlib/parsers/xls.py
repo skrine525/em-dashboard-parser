@@ -4,13 +4,13 @@ import numpy as np
 from sqlalchemy import orm
 from parserlib import utils
 from parserlib.db.engine import Session
-from parserlib.db.model import Index, CPRStockpile, Freight, ChinaWeather, Future, RailCoalExport
+from parserlib.db.model import Index, CPRStockpile, Freight, ChinaWeather, Future, CoalRailExport
 from parserlib.logger import logger
-from parserlib.paths import vostochny_dir, ici3_dir, manual_dir, rail_export_dir
+from parserlib.paths import vostochny_dir, ici3_dir, manual_dir, rail_coal_export_dir
 
 
 # Константы
-RAIL_COAL_GROUPS = {
+COAL_RAIL_GROUPS = {
     "azov": "southern_volume",
     "china (grodekovo)": "eastern_volume",
     "china (makhalino/kamyshovaya)": "eastern_volume",
@@ -41,7 +41,7 @@ RAIL_COAL_GROUPS = {
     "blagoveshchensk": "eastern_volume",
     "rostov-on-don": "southern_volume"
 }
-RAIL_COAL_PRODUCTS = [
+COAL_RAIL_PRODUCTS = [
     "brown coal",
     "coal middlings",
     "concentrate",
@@ -56,13 +56,13 @@ RAIL_COAL_PRODUCTS = [
 ]
 
 # Парсит Ж/Д перевозки и заносим в БД
-def write_rail_coal_exports(excel_file: pd.ExcelFile, session: orm.Session):
+def write_coal_rail_exports(excel_file: pd.ExcelFile, session: orm.Session):
     dataframe = excel_file.parse(excel_file.sheet_names[1])             # Получаем dataframe листа
     values = dataframe.values                                           # Получаем массив строк
     
     exports = {}
     for row in values:                                                  # Итерируем строки листа
-        if row[6].lower() in RAIL_COAL_PRODUCTS:                        # Если продукт находится в фильтрующем списке
+        if row[6].lower() in COAL_RAIL_PRODUCTS:                        # Если продукт находится в фильтрующем списке
             date = row[0].strftime("%Y-%m-%d")                          # Форматируем дату для БД
             dst = row[3].lower()                                        # Получаем направление в нижнем регистре
             volume = int(row[9])                                        # Получаем числовой объем
@@ -76,25 +76,25 @@ def write_rail_coal_exports(excel_file: pd.ExcelFile, session: orm.Session):
                 }
             
             # Получаем группу и добавляем объем
-            group = RAIL_COAL_GROUPS[dst]
+            group = COAL_RAIL_GROUPS[dst]
             exports[date][group] += volume
     
     # Итерируем даты периодов экспорта        
     for date in exports:
         export = exports[date]
         
-        rail_coal_export = session.query(RailCoalExport).filter_by(date=date).first()   # Ищем запись в БД по дате
+        coal_rail_export = session.query(CoalRailExport).filter_by(date=date).first()   # Ищем запись в БД по дате
         
         # Если запись не существует - создаем ее и добавляем в БД
-        if not rail_coal_export:
-            rail_coal_export = RailCoalExport(date)
-            session.add(rail_coal_export)
+        if not coal_rail_export:
+            coal_rail_export = CoalRailExport(date)
+            session.add(coal_rail_export)
         
         # Заносим данные в сущность
-        rail_coal_export.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        rail_coal_export.eastern_volume = export["eastern_volume"]
-        rail_coal_export.northwestern_volume = export["northwestern_volume"]
-        rail_coal_export.southern_volume = export["southern_volume"]
+        coal_rail_export.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+        coal_rail_export.eastern_volume = export["eastern_volume"]
+        coal_rail_export.northwestern_volume = export["northwestern_volume"]
+        coal_rail_export.southern_volume = export["southern_volume"]
         
         session.commit()                                                # Записываем данные в БД
 
@@ -447,17 +447,17 @@ def parse_downloaded_files():
                 logger.exception(f"File '{filename}' parsing exception")
                 
         # Парсинг файлов Ж/Д перевозок
-        rail_export_files = os.listdir(rail_export_dir)
+        rail_export_files = os.listdir(rail_coal_export_dir)
         for filename in rail_export_files:
             logger.info(f"Parsing '{filename}' file")
             
             try:
                 # Открываем файл
-                xls_path = os.path.join(rail_export_dir, filename)
+                xls_path = os.path.join(rail_coal_export_dir, filename)
                 excel_file = pd.ExcelFile(xls_path)
                 
                 # Парсим файл и закрываем его
-                write_rail_coal_exports(excel_file, session)
+                write_coal_rail_exports(excel_file, session)
                 excel_file.close()
                 
                 utils.archive_file(xls_path)
