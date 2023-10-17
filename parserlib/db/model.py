@@ -142,7 +142,7 @@ class Future(Base):
 class CoalRailExport(Base):
     __tablename__ = "coal_rail_exports"
     
-    cre_idf = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
+    cre_id = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
     update_timestamp = Column(INTEGER, nullable=False)                  # Время последнего обновления строки
     date = Column(VARCHAR(10), unique=True, nullable=False)             # Дата
     southern_volume = Column(INTEGER)                                   # Объем Южного направления

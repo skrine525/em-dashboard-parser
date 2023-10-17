@@ -11,6 +11,7 @@ from parserlib.logger import logger
 
 # Константы
 WAIT_TIMEOUT = 60
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 ENTRY_URL = "https://myaccount.argusmedia.com/login?ReturnUrl=https:%2F%2Fdirect.argusmedia.com%2F"
 
 USERNAME_INPUT_XPATH = "/html/body/app-root/app-public/div[2]/div/app-login/div/div/form/div[1]/div/div[1]/input"
@@ -38,6 +39,7 @@ chrome_options = Options()
 chrome_options.add_argument("--window-size=1920,1080")
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument("--headless=new")
+chrome_options.add_argument(f'--user-agent={USER_AGENT}')
 chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
 chrome_options.add_experimental_option('prefs', {
     'download.default_directory': downloading_dir,
@@ -87,12 +89,10 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
     wait.until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, HOMEPAGE_IFRAME_XPATH)))
     driver.switch_to.default_content()
         
-    # Производим загрузку файла
-    logger.info("Downloading file")
+    # Производим поиск оверлея
+    logger.info("Finding the overlay")
     navmenu = wait.until(EC.presence_of_element_located((By.XPATH, NAVMENU_PUBLICATIONS_XPATH)))
     navmenu.click()
-    
-    logger.info("Finding the overlay")
     overlay = None
     divs = driver.find_elements(By.TAG_NAME, "div")
     for div in divs:
@@ -101,6 +101,7 @@ def download_freight_file(driver: webdriver.Chrome, wait: WebDriverWait):
             break
         
     if overlay:
+        logger.info("Downloading file")
         first_publication = overlay.find_element(By.TAG_NAME, "li")
         links = first_publication.find_elements(By.TAG_NAME, "a")
         
