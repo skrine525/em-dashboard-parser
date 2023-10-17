@@ -139,10 +139,10 @@ class Future(Base):
 
 
 # Ж/Д перевозки угля
-class CoalRailExport(Base):
-    __tablename__ = "coal_rail_exports"
+class RailCoalExport(Base):
+    __tablename__ = "rail_coal_exports"
     
-    cre_id = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
+    rce_id = Column(INTEGER, primary_key=True, autoincrement=True)     # Первичный ключ
     update_timestamp = Column(INTEGER, nullable=False)                  # Время последнего обновления строки
     date = Column(VARCHAR(10), unique=True, nullable=False)             # Дата
     southern_volume = Column(INTEGER)                                   # Объем Южного направления
@@ -155,4 +155,4 @@ class CoalRailExport(Base):
 
     # Преобразование в строку
     def __repr__(self):
-        return f"<CoalRailExport({self.freight_id}, {self.date})>"
+        return f"<RailCoalExport({self.freight_id}, {self.date})>"

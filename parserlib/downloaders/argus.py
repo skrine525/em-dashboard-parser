@@ -261,7 +261,7 @@ def download_vostochny_file(driver: webdriver.Chrome, wait: WebDriverWait):
     logger.info("Done!")
     
 # Производит загрузку последнего файла Ж/Д перевозок
-def download_coal_rail_exports(driver: webdriver.Chrome, wait: WebDriverWait):
+def download_rail_coal_exports(driver: webdriver.Chrome, wait: WebDriverWait):
     logger.info("Download: Russian coal rail plan")
     
     # Очищаем папку загрузок
@@ -337,7 +337,7 @@ def main():
     download_freight_file(driver, wait)
     download_ici3_file(driver, wait)
     download_vostochny_file(driver, wait)
-    download_coal_rail_exports(driver, wait)
+    download_rail_coal_exports(driver, wait)
     driver.quit()
 
 # Если файл был запущен, а не импортирован

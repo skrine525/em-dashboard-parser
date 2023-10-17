@@ -4,7 +4,7 @@ import numpy as np
 from sqlalchemy import orm
 from parserlib import utils
 from parserlib.db.engine import Session
-from parserlib.db.model import Index, CPRStockpile, Freight, ChinaWeather, Future, CoalRailExport
+from parserlib.db.model import Index, CPRStockpile, Freight, ChinaWeather, Future, RailCoalExport
 from parserlib.logger import logger
 from parserlib.paths import vostochny_dir, ici3_dir, manual_dir, rail_coal_export_dir
 
@@ -56,7 +56,7 @@ COAL_RAIL_PRODUCTS = [
 ]
 
 # Парсит Ж/Д перевозки и заносим в БД
-def write_coal_rail_exports(excel_file: pd.ExcelFile, session: orm.Session):
+def write_rail_coal_exports(excel_file: pd.ExcelFile, session: orm.Session):
     dataframe = excel_file.parse(excel_file.sheet_names[1])             # Получаем dataframe листа
     values = dataframe.values                                           # Получаем массив строк
     
@@ -83,18 +83,18 @@ def write_coal_rail_exports(excel_file: pd.ExcelFile, session: orm.Session):
     for date in exports:
         export = exports[date]
         
-        coal_rail_export = session.query(CoalRailExport).filter_by(date=date).first()   # Ищем запись в БД по дате
+        rail_coal_export = session.query(RailCoalExport).filter_by(date=date).first()   # Ищем запись в БД по дате
         
         # Если запись не существует - создаем ее и добавляем в БД
-        if not coal_rail_export:
-            coal_rail_export = CoalRailExport(date)
-            session.add(coal_rail_export)
+        if not rail_coal_export:
+            rail_coal_export = RailCoalExport(date)
+            session.add(rail_coal_export)
         
         # Заносим данные в сущность
-        coal_rail_export.update_timestamp = int(datetime.datetime.utcnow().timestamp())
-        coal_rail_export.eastern_volume = export["eastern_volume"]
-        coal_rail_export.northwestern_volume = export["northwestern_volume"]
-        coal_rail_export.southern_volume = export["southern_volume"]
+        rail_coal_export.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+        rail_coal_export.eastern_volume = export["eastern_volume"]
+        rail_coal_export.northwestern_volume = export["northwestern_volume"]
+        rail_coal_export.southern_volume = export["southern_volume"]
         
         session.commit()                                                # Записываем данные в БД
 
@@ -339,7 +339,7 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
             row_str = str(row)
             logger.exception(f"Exception from parsing row of sheet 'Futures': {row_str}")
             
-    # Парсим Futures
+    # Парсим China Weather
     dataframe = excel_file.parse("China Weather")                                           # Получаем dataframe листа
     values = dataframe.values                                                               # Получаем массив строк
     
@@ -374,6 +374,39 @@ def write_manual_input(excel_file: pd.ExcelFile, session: orm.Session):
         except:
             row_str = str(row)
             logger.exception(f"Exception from parsing row of sheet 'Futures': {row_str}")
+            
+    # Парсим Coal Rail Exports
+    dataframe = excel_file.parse("Coal Rail Exports")                                       # Получаем dataframe листа
+    values = dataframe.values                                                               # Получаем массив строк
+    
+    for row in values:
+        try:
+            date = row[0].strftime("%Y-%m-%d")                                              # Форматируем дату для БД
+            southern_volume = int(row[1])                                                   # Получаем поле "Beijing Temp."
+            eastern_volume = int(row[2])                                                    # Получаем поле "Shanghai Temp."
+            northwestern_volume = int(row[3])                                               # Получаем поле "Guangzhou Temp."
+            update = False if np.isnan(row[4]) else bool(int(row[4]))                       # Получаем поле "Update?"
+            
+            rail_coal_export = session.query(RailCoalExport).filter_by(date=date).first()   # Ищем запись в БД по дате
+            
+            if not rail_coal_export:
+                # Если запись не существует - добавляем ее
+                rail_coal_export = RailCoalExport(date)
+                session.add(rail_coal_export)
+            elif not update:
+                # Если запись существует и обновлять запись не нужно - пропускаем
+                continue
+            
+            # Заносим данные в сущность
+            rail_coal_export.update_timestamp = int(datetime.datetime.utcnow().timestamp())
+            rail_coal_export.southern_volume = southern_volume
+            rail_coal_export.eastern_volume = eastern_volume
+            rail_coal_export.northwestern_volume = northwestern_volume
+            
+            session.commit()                                                                # Записываем данные в БД
+        except:
+            row_str = str(row)
+            logger.exception(f"Exception from parsing row of sheet 'Coal Rail Exports': {row_str}")
         
 # Записывает данные в БД из "ручных" XLSX файлов
 def parse_manual_input_files():
@@ -457,7 +490,7 @@ def parse_downloaded_files():
                 excel_file = pd.ExcelFile(xls_path)
                 
                 # Парсим файл и закрываем его
-                write_coal_rail_exports(excel_file, session)
+                write_rail_coal_exports(excel_file, session)
                 excel_file.close()
                 
                 utils.archive_file(xls_path)
