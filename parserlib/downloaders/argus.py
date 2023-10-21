@@ -334,11 +334,13 @@ def download_rail_coal_exports(driver: webdriver.Chrome, wait: WebDriverWait):
 def main():
     logger.info("Starting Argus downloading")
     driver, wait = signin()
-    download_freight_file(driver, wait)
-    download_ici3_file(driver, wait)
-    download_vostochny_file(driver, wait)
-    download_rail_coal_exports(driver, wait)
-    driver.quit()
+    try:
+        download_freight_file(driver, wait)
+        download_ici3_file(driver, wait)
+        download_vostochny_file(driver, wait)
+        download_rail_coal_exports(driver, wait)
+    finally:
+        driver.quit()
 
 # Если файл был запущен, а не импортирован
 if __name__ == "__main__":

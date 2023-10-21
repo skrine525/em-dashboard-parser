@@ -7,7 +7,7 @@ __pycache__/
 
 # Dashboard Parser
 /config.json
-/parser.log
+/logs
 /files
 /downloads
 
